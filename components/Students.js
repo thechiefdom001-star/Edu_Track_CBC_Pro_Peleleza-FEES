@@ -16,7 +16,8 @@ export const Students = ({ data, setData, onSelectStudent }) => {
         { key: 'trip', label: 'Trip' }, { key: 'bookFund', label: 'Books' }, { key: 'caution', label: 'Caution' }, 
         { key: 'uniform', label: 'Uniform' }, { key: 'studentCard', label: 'School ID' }, { key: 'remedial', label: 'Remedials' },
         { key: 'assessmentFee', label: 'Assessment Fee' }, { key: 'projectFee', label: 'Project Fee' },
-        { key: 'activityFees', label: 'Activity Fees' }, { key: 'tieAndBadge', label: 'Tie & Badge' }, { key: 'academicSupport', label: 'Academic Support' }
+        { key: 'activityFees', label: 'Activity Fees' }, { key: 'tieAndBadge', label: 'Tie & Badge' }, { key: 'academicSupport', label: 'Academic Support' },
+        { key: 'pta', label: 'PTA' }
     ];
 
     const [editingId, setEditingId] = useState(null);
@@ -31,7 +32,7 @@ export const Students = ({ data, setData, onSelectStudent }) => {
         parentContact: '',
         stream: '',
         previousArrears: 0,
-        selectedFees: ['t1', 't2', 't3', 'admission', 'diary', 'development'] 
+        selectedFees: ['t1', 't2', 't3', 'admission', 'diary', 'development', 'pta'] 
     });
 
     const handleAdd = (e) => {
@@ -59,7 +60,7 @@ export const Students = ({ data, setData, onSelectStudent }) => {
             parentContact: '',
             stream: '',
             previousArrears: 0,
-            selectedFees: ['t1', 't2', 't3', 'admission', 'diary', 'development']
+            selectedFees: ['t1', 't2', 't3', 'admission', 'diary', 'development', 'pta']
         });
         setEditingId(null);
     };

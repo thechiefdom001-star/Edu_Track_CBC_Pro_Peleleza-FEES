@@ -81,7 +81,8 @@ export const Settings = ({ data, setData }) => {
         { key: 'projectFee', label: 'Project' },
         { key: 'activityFees', label: 'Activity Fees' },
         { key: 'tieAndBadge', label: 'Tie & Badge' },
-        { key: 'academicSupport', label: 'Academic Support' }
+        { key: 'academicSupport', label: 'Academic Support' },
+        { key: 'pta', label: 'PTA' }
     ];
 
     const handleExport = () => {

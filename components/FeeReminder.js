@@ -33,7 +33,8 @@ export const FeeReminder = ({ data }) => {
         { key: 'projectFee', label: 'Project Fee' },
         { key: 'activityFees', label: 'Activity Fees' },
         { key: 'tieAndBadge', label: 'Tie & Badge' },
-        { key: 'academicSupport', label: 'Academic Support' }
+        { key: 'academicSupport', label: 'Academic Support' },
+        { key: 'pta', label: 'PTA' }
     ];
 
     const calculateArrears = (student) => {
@@ -192,7 +193,7 @@ export const FeeReminder = ({ data }) => {
                             </div>
                             <div class="flex justify-center mb-4 sm:mb-6">
                                 <div class="bg-slate-900 text-white px-4 sm:px-6 py-1 rounded text-[8px] sm:text-[10px] font-black uppercase tracking-widest">
-                                    Official Fee Balance Notice ${selectedTerm !== 'ALL' ? `- ${selectedTerm}` : ''}
+                                    Official Fee Balance Notice ${selectedTerm !== 'ALL' ? `- ${selectedTerm}` : ''} • ${settings.academicYear}
                                 </div>
                             </div>
 
