@@ -1,5 +1,5 @@
 import { h } from 'preact';
-import { useState, useMemo } from 'preact/hooks';
+import { useState, useMemo, useEffect } from 'preact/hooks';
 import htm from 'htm';
 import { Storage } from '../lib/storage.js';
 
@@ -9,8 +9,15 @@ export const ResultAnalysis = ({ data, onSelectStudent }) => {
     const [filterTerm, setFilterTerm] = useState('T1');
     const [filterGrade, setFilterGrade] = useState('GRADE 1');
     const [filterSubject, setFilterSubject] = useState('ALL');
-    const [filterYear, setFilterYear] = useState(data.settings.academicYear || '2024/2025');
+    const [filterYear, setFilterYear] = useState(data.settings.academicYear || '2025/2026');
     const [searchName, setSearchName] = useState('');
+
+    // Keep filterYear in sync with the active school setting so changing Academic Year applies immediately
+    useEffect(() => {
+        if (data?.settings?.academicYear) {
+            setFilterYear(data.settings.academicYear);
+        }
+    }, [data?.settings?.academicYear]);
 
     const students = (data.students || []).filter(s => s.grade === filterGrade);
     const assessments = data.assessments || [];
@@ -124,9 +131,13 @@ export const ResultAnalysis = ({ data, onSelectStudent }) => {
                         value=${filterYear}
                         onChange=${e => setFilterYear(e.target.value)}
                     >
-                        ${Array.from({ length: 5 }, (_, i) => 2024 + i).map(y => html`
-                            <option value="${y}/${y+1}">${y}/${y+1}</option>
-                        `)}
+                        ${(() => {
+                            const baseYear = Number((data.settings?.academicYear || '2025/2026').split('/')[0]);
+                            const startYear = isNaN(baseYear) ? 2025 : baseYear - 2;
+                            return Array.from({ length: 7 }, (_, i) => startYear + i).map(y => html`
+                                <option value="${y}/${y+1}">${y}/${y+1}</option>
+                            `);
+                        })()}
                     </select>
                 </div>
                 <div class="space-y-1">
@@ -213,7 +224,7 @@ export const ResultAnalysis = ({ data, onSelectStudent }) => {
                 <div class="mt-4 grid grid-cols-3 w-full border-y border-slate-200 py-2 text-[10px] font-bold uppercase">
                     <span>Date: ${new Date().toLocaleDateString()}</span>
                     <span>Students: ${analysisData.length}</span>
-                    <span>Academic Year: 2024</span>
+                    <span>Academic Year: ${filterYear}</span>
                 </div>
             </div>
 

@@ -79,6 +79,18 @@ const App = () => {
         return () => ws.removeEventListener('comment:created', handleRemoteUpdate);
     }, []);
 
+    // Listen for a restore event dispatched by Archives (or anywhere)
+    useEffect(() => {
+        const handler = (e) => {
+            if (e?.detail?.restored) {
+                setData(e.detail.restored);
+                alert('Archived year restored into active data.');
+            }
+        };
+        window.addEventListener('edutrack:restore', handler);
+        return () => window.removeEventListener('edutrack:restore', handler);
+    }, []);
+
     const handleCloudPush = async () => {
         const ws = window.websim || websim;
         if (!ws) {

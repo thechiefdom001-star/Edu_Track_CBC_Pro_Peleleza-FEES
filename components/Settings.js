@@ -65,9 +65,9 @@ export const Settings = ({ data, setData }) => {
         { key: 'admission', label: 'Adm' },
         { key: 'diary', label: 'Diary' },
         { key: 'development', label: 'Dev' },
-        { key: 't1', label: 'T1' },
-        { key: 't2', label: 'T2' },
-        { key: 't3', label: 'T3' },
+        { key: 't1', label: 'T1 Tuition' },
+        { key: 't2', label: 'T2 Tuition' },
+        { key: 't3', label: 'T3 Tuition' },
         { key: 'boarding', label: 'Board' },
         { key: 'breakfast', label: 'Brkfast' },
         { key: 'lunch', label: 'Lunch' },
@@ -75,10 +75,13 @@ export const Settings = ({ data, setData }) => {
         { key: 'bookFund', label: 'Books' },
         { key: 'caution', label: 'Caution' },
         { key: 'uniform', label: 'Uniform' },
-        { key: 'studentCard', label: 'Card' },
+        { key: 'studentCard', label: 'School ID' },
         { key: 'remedial', label: 'Remed' },
-        { key: 'assessmentFee', label: 'Exam' },
-        { key: 'projectFee', label: 'Project' }
+        { key: 'assessmentFee', label: 'Assessment Fee' },
+        { key: 'projectFee', label: 'Project' },
+        { key: 'activityFees', label: 'Activity Fees' },
+        { key: 'tieAndBadge', label: 'Tie & Badge' },
+        { key: 'academicSupport', label: 'Academic Support' }
     ];
 
     const handleExport = () => {
@@ -257,7 +260,7 @@ export const Settings = ({ data, setData }) => {
                                     class="w-full p-3 bg-white border border-orange-200 rounded-xl outline-none font-black text-orange-900"
                                 >
                                     ${Array.from({ length: 10 }, (_, i) => {
-                                        const year = 2024 + i;
+                                        const year = 2025 + i;
                                         return html`<option value="${year}/${year + 1}">${year}/${year + 1}</option>`;
                                     })}
                                 </select>
@@ -466,10 +469,10 @@ export const Settings = ({ data, setData }) => {
                             <label class="text-xs font-bold text-slate-500 uppercase">Academic Year</label>
                             <select 
                                 class="w-full p-3 bg-slate-50 rounded-xl outline-none border border-slate-100 focus:border-blue-400 font-bold"
-                                value=${settings.academicYear || '2024/2025'}
+                                value=${settings.academicYear || '2025/2026'}
                                 onChange=${(e) => setData({...data, settings: {...settings, academicYear: e.target.value}})}
                             >
-                                ${Array.from({ length: 27 }, (_, i) => 2024 + i).map(year => html`
+                                ${Array.from({ length: 27 }, (_, i) => 2025 + i).map(year => html`
                                     <option value="${year}/${year + 1}">${year}/${year + 1}</option>
                                 `)}
                             </select>

@@ -17,9 +17,9 @@ export const FeeReminder = ({ data }) => {
         { key: 'admission', label: 'Admission' },
         { key: 'diary', label: 'Diary' },
         { key: 'development', label: 'Development' },
-        { key: 't1', label: 'Term 1' },
-        { key: 't2', label: 'Term 2' },
-        { key: 't3', label: 'Term 3' },
+        { key: 't1', label: 'T1 Tuition' },
+        { key: 't2', label: 'T2 Tuition' },
+        { key: 't3', label: 'T3 Tuition' },
         { key: 'boarding', label: 'Boarding' },
         { key: 'breakfast', label: 'Breakfast' },
         { key: 'lunch', label: 'Lunch' },
@@ -27,10 +27,13 @@ export const FeeReminder = ({ data }) => {
         { key: 'bookFund', label: 'Book Fund' },
         { key: 'caution', label: 'Caution' },
         { key: 'uniform', label: 'Uniform' },
-        { key: 'studentCard', label: 'ID Card' },
+        { key: 'studentCard', label: 'School ID' },
         { key: 'remedial', label: 'Remedials' },
-        { key: 'assessmentFee', label: 'Exam Fee' },
-        { key: 'projectFee', label: 'Project Fee' }
+        { key: 'assessmentFee', label: 'Assessment Fee' },
+        { key: 'projectFee', label: 'Project Fee' },
+        { key: 'activityFees', label: 'Activity Fees' },
+        { key: 'tieAndBadge', label: 'Tie & Badge' },
+        { key: 'academicSupport', label: 'Academic Support' }
     ];
 
     const calculateArrears = (student) => {
