@@ -1,8 +1,10 @@
 import { h } from 'preact';
-import { useState } from 'preact/hooks';
+import { useState, useEffect } from 'preact/hooks';
 import htm from 'htm';
 import { Storage } from '../lib/storage.js';
 import { googleSheetSync } from '../lib/googleSheetSync.js';
+import { Pagination } from '../lib/pagination.js';
+import { PaginationControls } from './Pagination.js';
 
 const html = htm.bind(h);
 
@@ -12,7 +14,20 @@ export const Students = ({ data, setData, onSelectStudent }) => {
     const [filterGrade, setFilterGrade] = useState('ALL');
     const [filterStream, setFilterStream] = useState('ALL');
     const [filterFinance, setFilterFinance] = useState('ALL');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
+    // Reset to page 1 when data changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [data.students?.length]);
+
+    // Get hidden fee items from settings (per grade group)
+    const hiddenFeeItems = data.settings?.hiddenFeeItems || {};
+    const allHiddenFees = Object.values(hiddenFeeItems).flat();
+
+    // Filter out hidden fee items
     const defaultFeeOptions = [
         { key: 'admission', label: 'Admission' }, { key: 'diary', label: 'Diary' }, { key: 'development', label: 'Development' },
         { key: 't1', label: 'T1 Tuition' }, { key: 't2', label: 'T2 Tuition' }, { key: 't3', label: 'T3 Tuition' },
@@ -22,13 +37,27 @@ export const Students = ({ data, setData, onSelectStudent }) => {
         { key: 'assessmentFee', label: 'Assessment Fee' }, { key: 'projectFee', label: 'Project Fee' },
         { key: 'activityFees', label: 'Activity Fees' }, { key: 'tieAndBadge', label: 'Tie & Badge' }, { key: 'academicSupport', label: 'Academic Support' },
         { key: 'pta', label: 'PTA' }
-    ];
+    ].filter(opt => !allHiddenFees.includes(opt.key));
 
     const customFeeOptions = (data.settings.customFeeColumns || []).map(cf => ({ key: cf.key, label: cf.label }));
-    const feeOptions = [...defaultFeeOptions, ...customFeeOptions];
+    const customFeeOptionsFiltered = customFeeOptions.filter(opt => !allHiddenFees.includes(opt.key));
+    const feeOptions = [...defaultFeeOptions, ...customFeeOptionsFiltered];
+
+    // Helper function to get default fees excluding hidden ones
+    const getDefaultFees = () => {
+        const defaultFeeKeys = ['t1', 't2', 't3', 'admission', 'diary', 'development', 'pta'];
+        return defaultFeeKeys.filter(key => !allHiddenFees.includes(key));
+    };
+
+    // Helper function to filter out hidden fees from a fee array
+    const filterHiddenFees = (fees) => {
+        if (!Array.isArray(fees)) return getDefaultFees();
+        return fees.filter(key => !allHiddenFees.includes(key));
+    };
 
     const [editingId, setEditingId] = useState(null);
     const streams = data.settings.streams || ['A', 'B', 'C'];
+
     const [newStudent, setNewStudent] = useState({
         name: '',
         grade: data.settings.grades[0] || 'GRADE 1',
@@ -40,7 +69,7 @@ export const Students = ({ data, setData, onSelectStudent }) => {
         upiNo: '',
         parentContact: '',
         previousArrears: 0,
-        selectedFees: ['t1', 't2', 't3', 'admission', 'diary', 'development', 'pta']
+        selectedFees: getDefaultFees()
     });
 
     const handleAdd = async (e) => {
@@ -48,8 +77,9 @@ export const Students = ({ data, setData, onSelectStudent }) => {
 
         // Save student first
         if (editingId) {
-            const updatedStudent = { ...newStudent, id: editingId };
-            const updated = data.students.map(s => s.id === editingId ? updatedStudent : s);
+            // Filter out hidden fees before saving
+            const filteredStudent = { ...newStudent, id: editingId, selectedFees: filterHiddenFees(newStudent.selectedFees) };
+            const updated = data.students.map(s => s.id === editingId ? filteredStudent : s);
             setData({ ...data, students: updated });
             setEditingId(null);
 
@@ -57,7 +87,7 @@ export const Students = ({ data, setData, onSelectStudent }) => {
             if (data.settings.googleScriptUrl) {
                 setSyncStatus('Updating Google...');
                 googleSheetSync.setSettings(data.settings);
-                const resp = await googleSheetSync.pushStudent(updatedStudent);
+                const resp = await googleSheetSync.pushStudent(filteredStudent);
                 if (!resp.success) {
                     console.warn('Failed to update student on Google:', resp.error);
                 }
@@ -66,7 +96,8 @@ export const Students = ({ data, setData, onSelectStudent }) => {
             }
         } else {
             const id = Date.now().toString();
-            const newStudentWithId = { ...newStudent, id };
+            // Filter out hidden fees before saving
+            const newStudentWithId = { ...newStudent, id, selectedFees: filterHiddenFees(newStudent.selectedFees) };
             setData({ ...data, students: [...(data.students || []), newStudentWithId] });
 
             // Sync to Google Sheet
@@ -96,13 +127,15 @@ export const Students = ({ data, setData, onSelectStudent }) => {
             parentContact: '',
             stream: streams[0] || '',
             previousArrears: 0,
-            selectedFees: ['t1', 't2', 't3', 'admission', 'diary', 'development', 'pta']
+            selectedFees: getDefaultFees()
         });
         setEditingId(null);
     };
 
     const handleEdit = (student) => {
-        setNewStudent({ ...student, category: student.category || 'Normal' });
+        // Filter out hidden fees from student's selectedFees
+        const filteredFees = filterHiddenFees(student.selectedFees);
+        setNewStudent({ ...student, category: student.category || 'Normal', selectedFees: filteredFees });
         setEditingId(student.id);
         setShowAdd(true);
     };
@@ -145,6 +178,9 @@ export const Students = ({ data, setData, onSelectStudent }) => {
     };
 
     const toggleFee = (key) => {
+        // Don't allow toggling hidden fees
+        if (allHiddenFees.includes(key)) return;
+
         const current = newStudent.selectedFees || [];
         const updated = current.includes(key)
             ? current.filter(k => k !== key)
@@ -153,6 +189,16 @@ export const Students = ({ data, setData, onSelectStudent }) => {
     };
 
     const filteredStudents = (data.students || []).filter(s => {
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch = !searchTerm ||
+            (s.name && s.name.toLowerCase().includes(searchLower)) ||
+            (s.admissionNo && s.admissionNo.toLowerCase().includes(searchLower)) ||
+            (s.grade && s.grade.toLowerCase().includes(searchLower)) ||
+            (s.stream && s.stream.toLowerCase().includes(searchLower)) ||
+            (s.parentContact && s.parentContact.toString().includes(searchTerm));
+
+        if (!matchesSearch) return false;
+
         const matchesGrade = filterGrade === 'ALL' || s.grade === filterGrade;
         const matchesStream = filterStream === 'ALL' || s.stream === filterStream;
 
@@ -161,7 +207,7 @@ export const Students = ({ data, setData, onSelectStudent }) => {
         const feeStructure = data.settings.feeStructures?.find(f => f.grade === s.grade);
         const selectedKeys = s.selectedFees || ['t1', 't2', 't3'];
         const totalDue = (Number(s.previousArrears) || 0) + (feeStructure ? selectedKeys.reduce((sum, key) => sum + (feeStructure[key] || 0), 0) : 0);
-        const totalPaid = (data.payments || []).filter(p => p.studentId === s.id).reduce((sum, p) => sum + Number(p.amount), 0);
+        const totalPaid = (data.payments || []).filter(p => String(p.studentId) === String(s.id)).reduce((sum, p) => sum + Number(p.amount), 0);
         const balance = totalDue - totalPaid;
 
         if (filterFinance === 'FULL') return matchesGrade && matchesStream && balance <= 0 && totalDue > 0;
@@ -171,17 +217,43 @@ export const Students = ({ data, setData, onSelectStudent }) => {
         return matchesGrade && matchesStream;
     });
 
+    // Pagination
+    const handlePageChange = (newPage, newItemsPerPage) => {
+        if (newItemsPerPage) {
+            setItemsPerPage(newItemsPerPage);
+            setCurrentPage(1);
+        } else {
+            setCurrentPage(newPage);
+        }
+    };
+
+    const safeFilteredStudents = filteredStudents || [];
+    const paginatedStudents = Pagination.getPageItems(safeFilteredStudents, currentPage, itemsPerPage);
+
     return html`
         <div class="space-y-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 class="text-2xl font-bold">Students Directory</h2>
-                    <p class="text-slate-500 text-sm">Manage student enrollment and registration data</p>
+                    <p class="text-slate-500 text-sm">
+                        ${(data.students || []).length} total students
+                        ${searchTerm ? ` | ${safeFilteredStudents.length} matches` : ''}
+                    </p>
                 </div>
                 ${syncStatus && html`
                     <span class="text-xs font-bold ${syncStatus.includes('✓') ? 'text-green-600' : 'text-blue-600'}">${syncStatus}</span>
                 `}
                 <div class="flex flex-wrap gap-2 no-print w-full md:w-auto">
+                    <div class="relative">
+                        <input 
+                            type="text"
+                            placeholder="Search name, admission, contact..."
+                            class="bg-white border border-slate-200 text-slate-600 px-4 py-2 pl-10 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64"
+                            value=${searchTerm}
+                            onInput=${(e) => setSearchTerm(e.target.value)}
+                        />
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+                    </div>
                     <select 
                         class="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500"
                         value=${filterGrade}
@@ -353,9 +425,10 @@ export const Students = ({ data, setData, onSelectStudent }) => {
             `}
 
             <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-x-auto no-scrollbar">
-                <table class="w-full text-left min-w-[800px]">
+                <table class="w-full text-left min-w-[800px] students-print-table">
                     <thead class="bg-slate-50 border-b border-slate-100">
                         <tr>
+                            <th class="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase">#</th>
                             <th class="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase">Name</th>
                             <th class="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase">Adm No</th>
                             <th class="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase">Adm Date</th>
@@ -367,8 +440,13 @@ export const Students = ({ data, setData, onSelectStudent }) => {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
-                        ${filteredStudents.map(student => html`
-                            <tr key=${student.id} class="hover:bg-slate-100 transition-colors even:bg-slate-50">
+                        ${(
+                            /* On screen: show paginated slice. On print: all rows rendered,
+                               CSS hides the screen-subset and shows the full-list tbody */
+                            paginatedStudents
+                        ).map((student, idx) => html`
+                            <tr key=${student.id} class="hover:bg-slate-100 transition-colors even:bg-slate-50 students-screen-row">
+                                <td class="px-6 py-4 text-slate-400 text-xs font-mono">${(currentPage - 1) * itemsPerPage + idx + 1}</td>
                                 <td class="px-6 py-4">
                                     <div class="font-bold text-sm">${student.name}</div>
                                     <div class="text-[9px] text-slate-400 uppercase">${student.stream || 'No Stream'}</div>
@@ -424,9 +502,44 @@ export const Students = ({ data, setData, onSelectStudent }) => {
                             </tr>
                         `)}
                     </tbody>
+                    <!-- Full data tbody: hidden on screen, visible during print -->
+                    <tbody class="students-print-rows" style="display:none">
+                        ${filteredStudents.map((student, idx) => html`
+                            <tr key=${`print-${student.id}`} class="even:bg-slate-50">
+                                <td class="px-4 py-2 text-slate-400 text-xs font-mono">${idx + 1}</td>
+                                <td class="px-4 py-2">
+                                    <div class="font-bold text-sm">${student.name}</div>
+                                    <div class="text-[9px] text-slate-400 uppercase">${student.stream || 'No Stream'}</div>
+                                </td>
+                                <td class="px-4 py-2 text-slate-500 text-sm font-mono">${student.admissionNo}</td>
+                                <td class="px-4 py-2 text-slate-500 text-xs font-mono">${student.admissionDate || '-'}</td>
+                                <td class="px-4 py-2 text-slate-500 text-xs font-mono">${student.upiNo || '-'}</td>
+                                <td class="px-4 py-2 text-slate-500 text-xs font-mono">${student.assessmentNo || '-'}</td>
+                                <td class="px-4 py-2 text-slate-700 text-xs font-bold">${student.parentContact || '-'}</td>
+                                <td class="px-4 py-2">
+                                    <div class="flex flex-col gap-1">
+                                        <span class="bg-slate-200 px-2 py-1 rounded text-[10px] font-bold uppercase whitespace-nowrap">${student.grade}${student.stream || ''}</span>
+                                        ${['GRADE 10', 'GRADE 11', 'GRADE 12'].includes(student.grade) && html`
+                                            <span class="text-[8px] font-black text-blue-600 uppercase tracking-tighter">
+                                                ${student.seniorPathway ? student.seniorPathway.replace(/([A-Z])/g, ' $1') : 'No Pathway'}
+                                            </span>
+                                        `}
+                                    </div>
+                                </td>
+                            </tr>
+                        `)}
+                    </tbody>
                 </table>
-                ${filteredStudents.length === 0 && html`
+                ${safeFilteredStudents.length === 0 && html`
                     <div class="p-12 text-center text-slate-300">No students found matching current filters.</div>
+                `}
+                ${safeFilteredStudents.length > 0 && html`
+                    <${PaginationControls}
+                        currentPage=${currentPage}
+                        onPageChange=${handlePageChange}
+                        totalItems=${safeFilteredStudents.length}
+                        itemsPerPage=${itemsPerPage}
+                    />
                 `}
             </div>
         </div>
